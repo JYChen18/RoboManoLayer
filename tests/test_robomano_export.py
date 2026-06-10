@@ -59,12 +59,14 @@ def test_robomano_export_xml_writes_meshes_and_both_joint_modes(
 
     saved_folder = layer.export_xml(tmp_path)
     mesh_folder = saved_folder / "meshes"
-    reduced_xml = saved_folder / "right.xml"
-    ball_xml = saved_folder / "right_ball.xml"
+    reduced_xml = saved_folder / "reduced.xml"
+    ball_xml = saved_folder / "ball.xml"
 
     assert saved_folder.parent == tmp_path / "right"
     assert saved_folder.name.startswith("beta_")
     assert len(saved_folder.name) == len("beta_") + 10
+    assert not (saved_folder / "right.xml").exists()
+    assert not (saved_folder / "right_ball.xml").exists()
 
     reduced = ET.parse(reduced_xml).getroot()
     ball = ET.parse(ball_xml).getroot()
@@ -113,8 +115,8 @@ def test_robomano_export_xml_existing_folder_skips_saving(
     (saved_folder / "betas.txt").write_text("0 0 0 0 0 0 0 0 0 0\n")
 
     assert layer.export_xml(tmp_path) == saved_folder
-    assert not (saved_folder / "right.xml").exists()
-    assert not (saved_folder / "right_ball.xml").exists()
+    assert not (saved_folder / "reduced.xml").exists()
+    assert not (saved_folder / "ball.xml").exists()
     assert not (saved_folder / "meshes").exists()
 
 
@@ -134,7 +136,7 @@ def test_robomano_export_xml_existing_folder_warns_on_beta_mismatch(
     with _capture_loguru_warnings() as messages:
         assert layer.export_xml(tmp_path) == saved_folder
     assert any("beta difference" in message for message in messages)
-    assert not (saved_folder / "right.xml").exists()
+    assert not (saved_folder / "reduced.xml").exists()
 
 
 def test_robomano_export_xml_existing_folder_warns_on_missing_beta_txt(
@@ -152,7 +154,7 @@ def test_robomano_export_xml_existing_folder_warns_on_missing_beta_txt(
     with _capture_loguru_warnings() as messages:
         assert layer.export_xml(tmp_path) == saved_folder
     assert any("missing betas.txt in folder" in message for message in messages)
-    assert not (saved_folder / "right.xml").exists()
+    assert not (saved_folder / "reduced.xml").exists()
 
 
 def test_robomano_zero_beta_reduced_xml_uses_robowrapper_joint_frames(
@@ -166,7 +168,7 @@ def test_robomano_zero_beta_reduced_xml_uses_robowrapper_joint_frames(
     )
 
     saved_folder = layer.export_xml(tmp_path)
-    root = ET.parse(saved_folder / "right.xml").getroot()
+    root = ET.parse(saved_folder / "reduced.xml").getroot()
 
     index1y = root.find(".//body[@name='index1y']")
     index1x = root.find(".//body[@name='index1x']")
@@ -244,7 +246,7 @@ def test_robomano_left_zero_beta_reduced_xml_uses_mirrored_joint_frames(
     )
 
     saved_folder = layer.export_xml(tmp_path)
-    root = ET.parse(saved_folder / "left.xml").getroot()
+    root = ET.parse(saved_folder / "reduced.xml").getroot()
 
     index1y = root.find(".//body[@name='index1y']")
     index1x = root.find(".//body[@name='index1x']")

@@ -49,10 +49,12 @@ robo_layer = RoboManoLayer(side="right", betas=torch.zeros(10))
 saved_folder = robo_layer.export_xml(Path("exports/robomano"))
 ```
 
-`export_xml` writes to `exports/robomano/right/beta_xxxxxxxxxx` and returns that
-folder. The folder contains `betas.txt`, `right.xml`, `right_ball.xml`, and
-`meshes/`. If the folder already exists, export is skipped; `betas.txt` is read
-to warn when the saved beta differs from the current beta by more than `1e-5`.
+`export_xml` writes to `exports/robomano/<side>/beta_xxxxxxxxxx` and returns
+that folder. For example, a right-hand export is saved under
+`exports/robomano/right/beta_xxxxxxxxxx`. The side-specific folder contains
+`betas.txt`, `reduced.xml`, `ball.xml`, and `meshes/`. If the folder already
+exists, export is skipped; `betas.txt` is read to warn when the saved beta
+differs from the current beta by more than `1e-5`.
 
 ### RoboManoLayer Usage
 

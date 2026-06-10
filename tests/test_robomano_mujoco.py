@@ -108,7 +108,7 @@ def test_exported_ball_xml_tracks_robomano_articulation(
     link_poses = layer.forward_kinematics(qpos)
     output = layer.get_verts_joints(link_poses)
 
-    model = mujoco.MjModel.from_xml_path(str(saved_folder / "right_ball.xml"))
+    model = mujoco.MjModel.from_xml_path(str(saved_folder / "ball.xml"))
     data = mujoco.MjData(model)
     data.qpos[:] = qpos[0, 7:].detach().cpu().numpy()
     mujoco.mj_forward(model, data)
@@ -143,7 +143,7 @@ def test_exported_reduced_xml_tracks_reduced_forward_kinematics(
     link_poses = layer.forward_kinematics_reduced(qpos)
     output = layer.get_verts_joints(link_poses)
 
-    model = mujoco.MjModel.from_xml_path(str(saved_folder / "right.xml"))
+    model = mujoco.MjModel.from_xml_path(str(saved_folder / "reduced.xml"))
     data = mujoco.MjData(model)
     data.qpos[:] = qpos[0, 7:].detach().cpu().numpy()
     mujoco.mj_forward(model, data)

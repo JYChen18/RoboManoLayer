@@ -31,6 +31,8 @@ from .robomano_utils import (
 RoboManoOutput = namedtuple("RoboManoOutput", ["verts", "joints"])
 
 _BETA_TXT_NAME = "betas.txt"
+_REDUCED_XML_NAME = "reduced.xml"
+_BALL_XML_NAME = "ball.xml"
 _BETA_WARNING_THRESHOLD = 1e-5
 
 
@@ -466,8 +468,8 @@ class RoboManoLayer(torch.nn.Module):
             frames,
         )
 
-        reduced_xml = saved_folder / f"{self.side}.xml"
-        ball_xml = saved_folder / f"{self.side}_ball.xml"
+        reduced_xml = saved_folder / _REDUCED_XML_NAME
+        ball_xml = saved_folder / _BALL_XML_NAME
         xml_builder = RoboManoXmlBuilder(self.side, origins, frames)
         xml_builder.write(reduced_xml, ball_joints=False)
         xml_builder.write(ball_xml, ball_joints=True)

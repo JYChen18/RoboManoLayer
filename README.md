@@ -50,7 +50,9 @@ saved_folder = robo_layer.export_xml(Path("exports/robomano"))
 ```
 
 `export_xml` writes to `exports/robomano/right/beta_xxxxxxxxxx` and returns that
-folder. The folder contains `right.xml`, `right_ball.xml`, and `meshes/`.
+folder. The folder contains `betas.txt`, `right.xml`, `right_ball.xml`, and
+`meshes/`. If the folder already exists, export is skipped; `betas.txt` is read
+to warn when the saved beta differs from the current beta by more than `1e-5`.
 
 ### RoboManoLayer Usage
 

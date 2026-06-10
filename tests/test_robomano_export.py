@@ -1,11 +1,14 @@
+from contextlib import contextmanager
 import struct
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+from loguru import logger
 import roma
 import torch
 
 from manolayer import RoboManoLayer
+from manolayer.robomano_layer import _beta_tag
 from manolayer.robomano_utils import mano_xml_frame_matrix
 
 
@@ -28,6 +31,20 @@ def _assert_same_rotation(actual: str, expected: str):
 def _assert_rotation_matrix(actual: str, expected: torch.Tensor):
     actual_matrix = roma.unitquat_to_rotmat(roma.quat_wxyz_to_xyzw(_vec(actual)))
     assert torch.allclose(actual_matrix, expected, atol=3e-6, rtol=3e-6)
+
+
+@contextmanager
+def _capture_loguru_warnings():
+    messages = []
+    handler_id = logger.add(
+        lambda message: messages.append(str(message)),
+        level="WARNING",
+        format="{message}",
+    )
+    try:
+        yield messages
+    finally:
+        logger.remove(handler_id)
 
 
 def test_robomano_export_xml_writes_meshes_and_both_joint_modes(
@@ -61,6 +78,81 @@ def test_robomano_export_xml_writes_meshes_and_both_joint_modes(
     assert len(ball.findall("./actuator/position")) == 45
     assert len(reduced.findall("./worldbody//joint")) == 20
     assert len(ball.findall("./worldbody//joint")) == 15
+
+
+def test_robomano_export_xml_writes_beta_txt(
+    mano_assets_root,
+    tmp_path,
+):
+    betas = torch.linspace(-0.02, 0.02, 10)
+    layer = RoboManoLayer(
+        mano_assets_root=mano_assets_root,
+        side="right",
+        betas=betas,
+    )
+
+    saved_folder = layer.export_xml(tmp_path)
+    saved_betas = torch.tensor(
+        [float(value) for value in (saved_folder / "betas.txt").read_text().split()]
+    )
+
+    assert torch.allclose(saved_betas, betas, atol=0.0, rtol=0.0)
+
+
+def test_robomano_export_xml_existing_folder_skips_saving(
+    mano_assets_root,
+    tmp_path,
+):
+    layer = RoboManoLayer(
+        mano_assets_root=mano_assets_root,
+        side="right",
+        betas=torch.zeros(10),
+    )
+    saved_folder = tmp_path / "right" / _beta_tag(layer._shape_betas)
+    saved_folder.mkdir(parents=True)
+    (saved_folder / "betas.txt").write_text("0 0 0 0 0 0 0 0 0 0\n")
+
+    assert layer.export_xml(tmp_path) == saved_folder
+    assert not (saved_folder / "right.xml").exists()
+    assert not (saved_folder / "right_ball.xml").exists()
+    assert not (saved_folder / "meshes").exists()
+
+
+def test_robomano_export_xml_existing_folder_warns_on_beta_mismatch(
+    mano_assets_root,
+    tmp_path,
+):
+    layer = RoboManoLayer(
+        mano_assets_root=mano_assets_root,
+        side="right",
+        betas=torch.full((10,), 2e-5),
+    )
+    saved_folder = tmp_path / "right" / _beta_tag(layer._shape_betas)
+    saved_folder.mkdir(parents=True)
+    (saved_folder / "betas.txt").write_text("0 0 0 0 0 0 0 0 0 0\n")
+
+    with _capture_loguru_warnings() as messages:
+        assert layer.export_xml(tmp_path) == saved_folder
+    assert any("beta difference" in message for message in messages)
+    assert not (saved_folder / "right.xml").exists()
+
+
+def test_robomano_export_xml_existing_folder_warns_on_missing_beta_txt(
+    mano_assets_root,
+    tmp_path,
+):
+    layer = RoboManoLayer(
+        mano_assets_root=mano_assets_root,
+        side="right",
+        betas=torch.zeros(10),
+    )
+    saved_folder = tmp_path / "right" / _beta_tag(layer._shape_betas)
+    saved_folder.mkdir(parents=True)
+
+    with _capture_loguru_warnings() as messages:
+        assert layer.export_xml(tmp_path) == saved_folder
+    assert any("missing betas.txt in folder" in message for message in messages)
+    assert not (saved_folder / "right.xml").exists()
 
 
 def test_robomano_zero_beta_reduced_xml_uses_robowrapper_joint_frames(

@@ -5,6 +5,7 @@ description = "RoboManoLayer exports beta-specific MJCF hand models from MANO."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "loguru>=0.7.0",
     "roma>=1.5.0",
     "scipy>=1.10.0",
     "torch>=2.0.0",

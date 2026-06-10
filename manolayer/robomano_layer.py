@@ -1,12 +1,12 @@
 import os
-import warnings
 from collections import namedtuple
 from hashlib import sha1
 from pathlib import Path
 from typing import Optional
 
-import torch
+from loguru import logger
 import roma
+import torch
 
 from .helper import ready_arguments
 from .manolayer import DEFAULT_MANO_ASSETS_ROOT, ManoLayer
@@ -30,6 +30,9 @@ from .robomano_utils import (
 
 RoboManoOutput = namedtuple("RoboManoOutput", ["verts", "joints"])
 
+_BETA_TXT_NAME = "betas.txt"
+_BETA_WARNING_THRESHOLD = 1e-5
+
 
 def _beta_tag(betas: torch.Tensor) -> str:
     betas = (
@@ -40,6 +43,26 @@ def _beta_tag(betas: torch.Tensor) -> str:
     )
     digest = sha1(betas.numpy().tobytes()).hexdigest()[:10]
     return f"beta_{digest}"
+
+
+def _flat_beta_tensor(betas: torch.Tensor) -> torch.Tensor:
+    return (
+        betas.detach()
+        .to(dtype=torch.float32, device="cpu")
+        .reshape(-1)
+        .contiguous()
+    )
+
+
+def _beta_txt_content(betas: torch.Tensor) -> str:
+    return "\n".join(repr(float(value)) for value in _flat_beta_tensor(betas)) + "\n"
+
+
+def _read_beta_txt(beta_txt: Path) -> torch.Tensor:
+    return torch.tensor(
+        [float(value) for value in beta_txt.read_text().split()],
+        dtype=torch.float32,
+    )
 
 
 class RoboManoLayer(torch.nn.Module):
@@ -177,7 +200,7 @@ class RoboManoLayer(torch.nn.Module):
         elif rot_mode == "quat":
             full_quats = pose_coeffs.view(-1, 16, 4)
             if use_pca or not flat_hand_mean:
-                warnings.warn(
+                logger.warning(
                     "Quat mode doesn't support PCA pose or non flat_hand_mean !"
                 )
         else:
@@ -388,6 +411,36 @@ class RoboManoLayer(torch.nn.Module):
 
     def export_xml(self, save_folder: str | os.PathLike) -> Path:
         saved_folder = Path(save_folder) / self.side / _beta_tag(self._shape_betas)
+        beta_txt = saved_folder / _BETA_TXT_NAME
+
+        if saved_folder.exists():
+            if not beta_txt.is_file():
+                logger.warning("missing betas.txt in folder {}", saved_folder)
+                return saved_folder
+
+            saved_betas = _read_beta_txt(beta_txt)
+            current_betas = _flat_beta_tensor(self._shape_betas)
+            if saved_betas.shape != current_betas.shape:
+                logger.warning(
+                    "RoboMano export beta difference could not be checked in {}: "
+                    "saved beta shape {} does not match current beta shape {}.",
+                    saved_folder,
+                    tuple(saved_betas.shape),
+                    tuple(current_betas.shape),
+                )
+                return saved_folder
+
+            beta_difference = torch.max(torch.abs(saved_betas - current_betas)).item()
+            if beta_difference > _BETA_WARNING_THRESHOLD:
+                logger.warning(
+                    "RoboMano export beta difference in {} is {:g}, larger than "
+                    "threshold {:g}.",
+                    saved_folder,
+                    beta_difference,
+                    _BETA_WARNING_THRESHOLD,
+                )
+            return saved_folder
+
         mesh_folder = saved_folder / "meshes"
         mesh_folder.mkdir(parents=True, exist_ok=True)
 
@@ -418,6 +471,7 @@ class RoboManoLayer(torch.nn.Module):
         xml_builder = RoboManoXmlBuilder(self.side, origins, frames)
         xml_builder.write(reduced_xml, ball_joints=False)
         xml_builder.write(ball_xml, ball_joints=True)
+        beta_txt.write_text(_beta_txt_content(self._shape_betas))
         return saved_folder
 
     def get_mano_closed_faces(self):

@@ -1,85 +1,75 @@
-# ManoLayer without chumpy
+# RoboManoLayer
 
-Why another manolayer? 
-- I failed to install chumpy with uv, which is required by both [manotorch](https://github.com/lixiny/manotorch) and [manopth](https://github.com/hassony2/manopth).
-- [smplx](https://github.com/vchoutas/smplx/tree/main) has a different input format, which results in a ghost translation.
+Build robot-friendly MANO hand models for PyTorch and MuJoCo.
 
+- `ManoLayer` compatibility without the `chumpy` dependency.
+- Beta-specific MJCF export for robotics simulation.
+- Conversion between MANO poses, MJCF `qpos`, link poses, vertices, and joints.
 
-# Installation 
+## Installation
+
 ```bash
-uv add https://github.com/JYChen18/manolayer.git
+uv add git+https://github.com/JYChen18/manolayer.git
 ```
 
-# Example
-Download mano models from [here](https://mano.is.tue.mpg.de/)
+Download the official MANO model files from the
+[MANO website](https://mano.is.tue.mpg.de/) and place them under:
+
+```text
+~/.manolayer/assets/mano/models/MANO_RIGHT.pkl
+~/.manolayer/assets/mano/models/MANO_LEFT.pkl
+```
+
+You can also pass a custom `mano_assets_root` when constructing a layer.
+
+## Usage
+
+### ManoLayer Usage
+
+`ManoLayer` follows [lixiny/manotorch](https://github.com/lixiny/manotorch).
+
 ```python
 from manolayer import ManoLayer
 
-# Place the models in ~/.manolayer/assets/mano/models/MANO_RIGHT.pkl
-mano_layer = ManoLayer(side="right")
+mano_layer = ManoLayer(side="right", center_idx=0)
+output = mano_layer(pose_coeffs, betas=betas)
 ```
 
-# Staged API
-The original implementation is still available as `LegacyManoLayer`. The public
-`ManoLayer` now exposes the MANO forward pass as reusable stages:
+### RoboManoLayer Export
 
-```python
-from manolayer import ManoLayer
-
-mano_layer = ManoLayer(
-    side="right",
-    rot_mode="axisang",
-    center_idx=0,
-)
-
-qpos = mano_layer.pose_to_qpos(pose_coeffs)
-link_poses = mano_layer.forward_kinematics(qpos)
-output = mano_layer.get_verts_joints(link_poses)
-```
-
-# RoboMano export
-`RoboManoLayer` exports a beta-specific MuJoCo model:
+`RoboManoLayer` supports exporting MJCF models for robotics simulation.
 
 ```python
 from pathlib import Path
 
 import torch
-
 from manolayer import RoboManoLayer
 
-betas = torch.zeros(10)
-beta_name = "neutral"
-robo_layer = RoboManoLayer(
-    side="right",
-    betas=betas,
-)
-paths = robo_layer.export_xml(Path("exports") / "robomano" / "right" / beta_name)
+robo_layer = RoboManoLayer(side="right", betas=torch.zeros(10))
+saved_folder = robo_layer.export_xml(Path("exports/robomano"))
 ```
 
-See `examples/save_robomano_model.py` for a simple beta-hashed save path.
+`export_xml` writes to `exports/robomano/right/beta_xxxxxxxxxx` and returns that
+folder. The folder contains `right.xml`, `right_ball.xml`, and `meshes/`.
 
-The staged `qpos` has shape `(B, 67)`: root position `(3)`, root quaternion
-`(4)`, then 15 joint quaternions. Pose options such as `rot_mode`,
-`center_idx`, `use_pca`, `flat_hand_mean`, and `ncomps` are fixed when the
-layer is created. `center_idx` only affects the root translation baked into
-`pose_to_qpos`; `forward_kinematics` and `get_verts_joints` do not read
-`center_idx`. The staged API supports `center_idx=None` and `center_idx=0`.
-The final `ManoOutput` only contains `verts` and `joints`.
+### RoboManoLayer Usage
 
-If incoming link poses use robot or simulator link frames instead of MANO link
-frames, configure their zero-pose link frames once:
+`RoboManoLayer` supports staged use: convert MANO poses to MJCF `qpos`, run
+forward kinematics, then recover vertices and joints.
 
 ```python
-mano_layer = ManoLayer(
-    side="right",
-    center_idx=0,
-    bind_poses=bind_poses,
-).to(device=robot_link_poses.device, dtype=robot_link_poses.dtype)
-output = mano_layer.get_verts_joints(robot_link_poses)
+import torch
+from manolayer import RoboManoLayer
+
+robo_layer = RoboManoLayer(side="right", betas=torch.zeros(10))
+qpos = robo_layer.pose_to_qpos(pose_coeffs, center_idx=0)
+link_poses = robo_layer.forward_kinematics(qpos) # In simulation, use link poses from the simulator here.
+output = robo_layer.get_verts_joints(link_poses)
 ```
 
-# Acknowledgement
-- [mano](https://mano.is.tue.mpg.de/)
+## Acknowledgements
+
+- [MANO](https://mano.is.tue.mpg.de/)
 - [manotorch](https://github.com/lixiny/manotorch)
 - [manopth](https://github.com/hassony2/manopth)
-- [smplx](https://github.com/vchoutas/smplx/tree/main)
+- [smplx](https://github.com/vchoutas/smplx)

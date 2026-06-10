@@ -1,7 +1,7 @@
 [project]
 name = "manolayer"
 version = "0.1.0"
-description = "Add your description here"
+description = "RoboManoLayer exports beta-specific MJCF hand models from MANO."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

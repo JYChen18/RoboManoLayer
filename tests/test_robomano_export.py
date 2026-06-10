@@ -6,7 +6,7 @@ import roma
 import torch
 
 from manolayer import RoboManoLayer
-from manolayer.robo_mano_utils import mano_xml_frame_matrix
+from manolayer.robomano_utils import mano_xml_frame_matrix
 
 
 def _stl_triangle_count(path: Path):
@@ -40,15 +40,18 @@ def test_robomano_export_xml_writes_meshes_and_both_joint_modes(
         betas=torch.zeros(10),
     )
 
-    paths = layer.export_xml(tmp_path)
+    saved_folder = layer.export_xml(tmp_path)
+    mesh_folder = saved_folder / "meshes"
+    reduced_xml = saved_folder / "right.xml"
+    ball_xml = saved_folder / "right_ball.xml"
 
-    assert paths["mesh_folder"] == tmp_path / "meshes"
-    assert paths["reduced_xml"] == tmp_path / "right.xml"
-    assert paths["ball_xml"] == tmp_path / "right_ball.xml"
+    assert saved_folder.parent == tmp_path / "right"
+    assert saved_folder.name.startswith("beta_")
+    assert len(saved_folder.name) == len("beta_") + 10
 
-    reduced = ET.parse(paths["reduced_xml"]).getroot()
-    ball = ET.parse(paths["ball_xml"]).getroot()
-    mesh_files = sorted(paths["mesh_folder"].glob("*.stl"))
+    reduced = ET.parse(reduced_xml).getroot()
+    ball = ET.parse(ball_xml).getroot()
+    mesh_files = sorted(mesh_folder.glob("*.stl"))
 
     assert reduced.attrib["model"] == "mano_right"
     assert ball.attrib["model"] == "mano_right_ball"
@@ -70,8 +73,8 @@ def test_robomano_zero_beta_reduced_xml_uses_robowrapper_joint_frames(
         betas=torch.zeros(10),
     )
 
-    paths = layer.export_xml(tmp_path)
-    root = ET.parse(paths["reduced_xml"]).getroot()
+    saved_folder = layer.export_xml(tmp_path)
+    root = ET.parse(saved_folder / "right.xml").getroot()
 
     index1y = root.find(".//body[@name='index1y']")
     index1x = root.find(".//body[@name='index1x']")
@@ -148,8 +151,8 @@ def test_robomano_left_zero_beta_reduced_xml_uses_mirrored_joint_frames(
         betas=torch.zeros(10),
     )
 
-    paths = layer.export_xml(tmp_path)
-    root = ET.parse(paths["reduced_xml"]).getroot()
+    saved_folder = layer.export_xml(tmp_path)
+    root = ET.parse(saved_folder / "left.xml").getroot()
 
     index1y = root.find(".//body[@name='index1y']")
     index1x = root.find(".//body[@name='index1x']")

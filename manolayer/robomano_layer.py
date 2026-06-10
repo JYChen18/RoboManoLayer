@@ -1,6 +1,7 @@
 import os
 import warnings
 from collections import namedtuple
+from hashlib import sha1
 from pathlib import Path
 from typing import Optional
 
@@ -9,7 +10,7 @@ import roma
 
 from .helper import ready_arguments
 from .manolayer import DEFAULT_MANO_ASSETS_ROOT, ManoLayer
-from .robo_mano_utils import (
+from .robomano_utils import (
     MANO_LINK_PARENT_IDXS,
     MANO_OUTPUT_REORDER_IDXS,
     MANO_REDUCED_QPOS_LINKS,
@@ -28,6 +29,17 @@ from .robo_mano_utils import (
 )
 
 RoboManoOutput = namedtuple("RoboManoOutput", ["verts", "joints"])
+
+
+def _beta_tag(betas: torch.Tensor) -> str:
+    betas = (
+        betas.detach()
+        .to(dtype=torch.float32, device="cpu")
+        .reshape(-1)
+        .contiguous()
+    )
+    digest = sha1(betas.numpy().tobytes()).hexdigest()[:10]
+    return f"beta_{digest}"
 
 
 class RoboManoLayer(torch.nn.Module):
@@ -374,9 +386,9 @@ class RoboManoLayer(torch.nn.Module):
         link_poses = self.forward_kinematics(qpos)
         return self.get_verts_joints(link_poses)
 
-    def export_xml(self, save_folder: str | os.PathLike):
-        save_folder = Path(save_folder)
-        mesh_folder = save_folder / "meshes"
+    def export_xml(self, save_folder: str | os.PathLike) -> Path:
+        saved_folder = Path(save_folder) / self.side / _beta_tag(self._shape_betas)
+        mesh_folder = saved_folder / "meshes"
         mesh_folder.mkdir(parents=True, exist_ok=True)
 
         origins, frames = build_xml_bind_data_from_tensors(
@@ -401,16 +413,12 @@ class RoboManoLayer(torch.nn.Module):
             frames,
         )
 
-        reduced_xml = save_folder / f"{self.side}.xml"
-        ball_xml = save_folder / f"{self.side}_ball.xml"
+        reduced_xml = saved_folder / f"{self.side}.xml"
+        ball_xml = saved_folder / f"{self.side}_ball.xml"
         xml_builder = RoboManoXmlBuilder(self.side, origins, frames)
         xml_builder.write(reduced_xml, ball_joints=False)
         xml_builder.write(ball_xml, ball_joints=True)
-        return {
-            "mesh_folder": mesh_folder,
-            "reduced_xml": reduced_xml,
-            "ball_xml": ball_xml,
-        }
+        return saved_folder
 
     def get_mano_closed_faces(self):
         return ManoLayer.get_mano_closed_faces(self)

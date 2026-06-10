@@ -96,7 +96,7 @@ def test_exported_ball_xml_tracks_robomano_articulation(
         side="right",
         betas=betas,
     )
-    paths = layer.export_xml(tmp_path)
+    saved_folder = layer.export_xml(tmp_path)
 
     pose_coeffs = torch.randn(1, 16 * 3) * 0.2
     global_translation = torch.tensor([[0.05, -0.02, 0.03]])
@@ -108,7 +108,7 @@ def test_exported_ball_xml_tracks_robomano_articulation(
     link_poses = layer.forward_kinematics(qpos)
     output = layer.get_verts_joints(link_poses)
 
-    model = mujoco.MjModel.from_xml_path(str(paths["ball_xml"]))
+    model = mujoco.MjModel.from_xml_path(str(saved_folder / "right_ball.xml"))
     data = mujoco.MjData(model)
     data.qpos[:] = qpos[0, 7:].detach().cpu().numpy()
     mujoco.mj_forward(model, data)
@@ -134,7 +134,7 @@ def test_exported_reduced_xml_tracks_reduced_forward_kinematics(
         side="right",
         betas=torch.randn(10) * 0.03,
     )
-    paths = layer.export_xml(tmp_path)
+    saved_folder = layer.export_xml(tmp_path)
 
     qpos = torch.zeros(1, 27)
     qpos[:, :3] = torch.tensor([[0.03, -0.01, 0.04]])
@@ -143,7 +143,7 @@ def test_exported_reduced_xml_tracks_reduced_forward_kinematics(
     link_poses = layer.forward_kinematics_reduced(qpos)
     output = layer.get_verts_joints(link_poses)
 
-    model = mujoco.MjModel.from_xml_path(str(paths["reduced_xml"]))
+    model = mujoco.MjModel.from_xml_path(str(saved_folder / "right.xml"))
     data = mujoco.MjData(model)
     data.qpos[:] = qpos[0, 7:].detach().cpu().numpy()
     mujoco.mj_forward(model, data)

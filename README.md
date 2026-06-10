@@ -9,15 +9,15 @@ Build robot-friendly MANO hand models for PyTorch and MuJoCo.
 ## Installation
 
 ```bash
-uv add git+https://github.com/JYChen18/manolayer.git
+uv add git+https://github.com/JYChen18/RoboManoLayer.git
 ```
 
 Download the official MANO model files from the
 [MANO website](https://mano.is.tue.mpg.de/) and place them under:
 
 ```text
-~/.manolayer/assets/mano/models/MANO_RIGHT.pkl
-~/.manolayer/assets/mano/models/MANO_LEFT.pkl
+~/.robomanolayer/assets/mano/models/MANO_RIGHT.pkl
+~/.robomanolayer/assets/mano/models/MANO_LEFT.pkl
 ```
 
 You can also pass a custom `mano_assets_root` when constructing a layer.
@@ -29,7 +29,7 @@ You can also pass a custom `mano_assets_root` when constructing a layer.
 `ManoLayer` follows [lixiny/manotorch](https://github.com/lixiny/manotorch).
 
 ```python
-from manolayer import ManoLayer
+from robomanolayer import ManoLayer
 
 mano_layer = ManoLayer(side="right", center_idx=0)
 output = mano_layer(pose_coeffs, betas=betas)
@@ -43,7 +43,7 @@ output = mano_layer(pose_coeffs, betas=betas)
 from pathlib import Path
 
 import torch
-from manolayer import RoboManoLayer
+from robomanolayer import RoboManoLayer
 
 robo_layer = RoboManoLayer(side="right", betas=torch.zeros(10))
 saved_folder = robo_layer.export_xml(Path("exports/robomano"))
@@ -61,7 +61,7 @@ forward kinematics, then recover vertices and joints.
 
 ```python
 import torch
-from manolayer import RoboManoLayer
+from robomanolayer import RoboManoLayer
 
 robo_layer = RoboManoLayer(side="right", betas=torch.zeros(10))
 qpos = robo_layer.pose_to_qpos(pose_coeffs, center_idx=0)

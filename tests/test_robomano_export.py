@@ -7,9 +7,9 @@ from loguru import logger
 import roma
 import torch
 
-from manolayer import RoboManoLayer
-from manolayer.robomano_layer import _beta_tag
-from manolayer.robomano_utils import mano_xml_frame_matrix
+from robomanolayer import RoboManoLayer
+from robomanolayer.robomano_layer import _beta_tag
+from robomanolayer.robomano_utils import mano_xml_frame_matrix
 
 
 def _stl_triangle_count(path: Path):

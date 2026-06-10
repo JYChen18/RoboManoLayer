@@ -23,7 +23,7 @@ ManoOutput = namedtuple(
 )
 ManoOutput.__new__.__defaults__ = (None,) * len(ManoOutput._fields)
 
-DEFAULT_MANO_ASSETS_ROOT = "~/.manolayer/assets/mano/models"
+DEFAULT_MANO_ASSETS_ROOT = "~/.robomanolayer/assets/mano/models"
 
 
 class ManoLayer(torch.nn.Module):

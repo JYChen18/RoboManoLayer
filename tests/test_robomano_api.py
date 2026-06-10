@@ -1,8 +1,7 @@
 import pytest
 import torch
 
-from manolayer import RoboManoLayer
-from manolayer.manolayer import ManoLayer
+from robomanolayer import RoboManoLayer, ManoLayer
 
 
 def _assert_robo_output_close(actual, expected, atol=1e-5):
@@ -44,7 +43,7 @@ def test_robomano_staged_api_roundtrips_xml_link_frames(mano_assets_root):
     _assert_robo_output_close(actual, expected)
 
 
-def test_robomano_matches_manolayer_for_nonzero_beta_and_pose(mano_assets_root):
+def test_robomano_matches_mano_layer_for_nonzero_beta_and_pose(mano_assets_root):
     torch.manual_seed(1)
     betas = torch.randn(10) * 0.03
     pose_coeffs = torch.randn(4, 16 * 3) * 0.2
@@ -67,7 +66,7 @@ def test_robomano_matches_manolayer_for_nonzero_beta_and_pose(mano_assets_root):
     _assert_robo_output_close(actual, expected)
 
 
-def test_left_robomano_matches_manolayer_for_nonzero_beta_and_pose(mano_assets_root):
+def test_left_robomano_matches_mano_layer_for_nonzero_beta_and_pose(mano_assets_root):
     torch.manual_seed(4)
     betas = torch.randn(10) * 0.03
     pose_coeffs = torch.randn(3, 16 * 3) * 0.2

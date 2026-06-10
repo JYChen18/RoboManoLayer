@@ -1,5 +1,5 @@
 [project]
-name = "manolayer"
+name = "robomanolayer"
 version = "0.1.0"
 description = "RoboManoLayer exports beta-specific MJCF hand models from MANO."
 readme = "README.md"
@@ -12,9 +12,10 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["manolayer"]
+packages = ["robomanolayer"]
 
 [dependency-groups]
 dev = [
     "pytest>=9.0.3",
+    "mujoco>=3.9.0",
 ]

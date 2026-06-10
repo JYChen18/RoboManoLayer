@@ -2,7 +2,7 @@ import pytest
 import roma
 import torch
 
-from manolayer import RoboManoLayer
+from robomanolayer import RoboManoLayer
 
 
 def _body_names_for_ball_xml():

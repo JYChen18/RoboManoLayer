@@ -9,7 +9,7 @@ import roma
 import torch
 
 from .helper import ready_arguments
-from .manolayer import DEFAULT_MANO_ASSETS_ROOT, ManoLayer
+from .mano_layer import DEFAULT_MANO_ASSETS_ROOT, ManoLayer
 from .robomano_utils import (
     MANO_LINK_PARENT_IDXS,
     MANO_OUTPUT_REORDER_IDXS,
@@ -178,7 +178,7 @@ class RoboManoLayer(torch.nn.Module):
     ) -> torch.Tensor:
         if center_idx not in (None, 0):
             raise ValueError(
-                "The staged ManoLayer only supports center_idx=None or center_idx=0."
+                "The staged RoboManoLayer API only supports center_idx=None or center_idx=0."
             )
         if rot_mode == "axisang":
             hand_pose_coeffs = pose_coeffs[:, 3:]

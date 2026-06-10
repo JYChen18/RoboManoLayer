@@ -8,7 +8,7 @@ import pytest
 def mano_assets_root():
     candidates = [
         os.environ.get("MANO_ASSETS_ROOT"),
-        "~/.manolayer/assets/mano/models",
+        "~/.robomanolayer/assets/mano/models",
     ]
     for candidate in candidates:
         if not candidate:

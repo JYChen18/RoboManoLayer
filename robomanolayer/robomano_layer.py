@@ -38,22 +38,14 @@ _BETA_WARNING_THRESHOLD = 1e-5
 
 def _beta_tag(betas: torch.Tensor) -> str:
     betas = (
-        betas.detach()
-        .to(dtype=torch.float32, device="cpu")
-        .reshape(-1)
-        .contiguous()
+        betas.detach().to(dtype=torch.float32, device="cpu").reshape(-1).contiguous()
     )
     digest = sha1(betas.numpy().tobytes()).hexdigest()[:10]
     return f"beta_{digest}"
 
 
 def _flat_beta_tensor(betas: torch.Tensor) -> torch.Tensor:
-    return (
-        betas.detach()
-        .to(dtype=torch.float32, device="cpu")
-        .reshape(-1)
-        .contiguous()
-    )
+    return betas.detach().to(dtype=torch.float32, device="cpu").reshape(-1).contiguous()
 
 
 def _beta_txt_content(betas: torch.Tensor) -> str:
@@ -72,8 +64,7 @@ class RoboManoLayer(torch.nn.Module):
         self,
         side: str = "right",
         mano_assets_root: str = DEFAULT_MANO_ASSETS_ROOT,
-        *,
-        betas: torch.Tensor,
+        betas: Optional[torch.Tensor] = None,
     ):
         super().__init__()
         self.side = side
@@ -128,7 +119,9 @@ class RoboManoLayer(torch.nn.Module):
 
         self._set_beta(betas)
 
-    def _set_beta(self, betas: torch.Tensor):
+    def _set_beta(self, betas: Optional[torch.Tensor]):
+        if betas is None:
+            betas = self.th_betas
         if betas.ndim == 1:
             betas = betas.unsqueeze(0)
         if betas.ndim != 2 or betas.shape != self.th_betas.shape:

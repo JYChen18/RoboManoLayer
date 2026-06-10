@@ -9,9 +9,16 @@ def _assert_robo_output_close(actual, expected, atol=1e-5):
     assert torch.allclose(actual.joints, expected.joints, atol=atol, rtol=atol)
 
 
-def test_robomano_requires_init_beta(mano_assets_root):
-    with pytest.raises(TypeError, match="betas"):
-        RoboManoLayer(mano_assets_root=mano_assets_root, side="right")
+def test_robomano_defaults_init_beta_to_asset_betas(mano_assets_root):
+    omitted = RoboManoLayer(mano_assets_root=mano_assets_root, side="right")
+    explicit_none = RoboManoLayer(
+        mano_assets_root=mano_assets_root,
+        side="right",
+        betas=None,
+    )
+
+    assert torch.allclose(omitted._shape_betas, omitted.th_betas)
+    assert torch.allclose(explicit_none._shape_betas, explicit_none.th_betas)
 
     with pytest.raises(ValueError, match="RoboManoLayer betas must have shape"):
         RoboManoLayer(
